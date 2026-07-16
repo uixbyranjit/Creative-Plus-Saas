@@ -32,28 +32,40 @@ export default function LoginPage() {
     setError('');
 
     try {
+      console.log("1. Login form submitted for email:", email);
+      console.log("2. signIn() called");
       const res = await signIn('credentials', {
         redirect: false,
         email,
         password,
       });
+      console.log("signIn() returned response status:", res?.status, "error:", res?.error);
 
       if (res?.error) {
         setError('Invalid email or password combination');
         setLoading(false);
       } else {
+        console.log("14. Cookie written successfully (session complete)");
+        console.log("15. Redirect started - Fetching session...");
+        
         // Fetch session to determine role redirect
         const sessionRes = await fetch('/api/auth/session');
+        console.log("Session API Response received:", sessionRes.status);
         const session = await sessionRes.json();
+        console.log("Session JSON parsed. User role:", session?.user?.role);
         
         if (session?.user?.role === 'CLIENT') {
+          console.log("Routing to: /client-portal");
           router.push('/client-portal');
         } else {
+          console.log("Routing to: /dashboard");
           router.push('/dashboard');
         }
+        console.log("16. Redirect completed successfully");
         router.refresh();
       }
     } catch (err) {
+      console.error("❌ Login exception caught client-side:", err);
       setError('An unexpected error occurred. Please try again.');
       setLoading(false);
     }
