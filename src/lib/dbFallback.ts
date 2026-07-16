@@ -80,7 +80,15 @@ export function readDb(): LocalDb {
 }
 
 export function writeDb(data: LocalDb) {
-  initializeDbFile();
-  fs.writeFileSync(DB_FILE_PATH, JSON.stringify(data, null, 2), 'utf-8');
+  try {
+    initializeDbFile();
+    fs.writeFileSync(DB_FILE_PATH, JSON.stringify(data, null, 2), 'utf-8');
+  } catch (err: any) {
+    console.error("⚠️ Failed to write to local fallback database:", err.message);
+    if (err.code === 'EROFS') {
+      throw new Error("Local fallback database is read-only on Vercel. Please configure and migrate your production PostgreSQL database.");
+    }
+    throw err;
+  }
 }
 

@@ -105,28 +105,34 @@ export async function registerUser(data: any) {
     updatedAt: new Date().toISOString()
   };
 
-  return execute(
-    async () => {
-      // Check if user exists
-      const existing = await prisma.user.findUnique({ where: { email: data.email } });
-      if (existing) throw new Error("Email already registered");
-      return prisma.user.create({
-        data: {
-          name: data.name,
-          email: data.email,
-          password: data.password,
-          role: data.role || "EMPLOYEE",
-          profileImage: newUserObj.profileImage
-        }
-      });
-    },
-    (db) => {
-      const existing = db.users.find(u => u.email === data.email);
-      if (existing) throw new Error("Email already registered");
-      db.users.push(newUserObj);
-      return { result: newUserObj, updatedDb: db };
-    }
-  );
+  try {
+    const result = await execute(
+      async () => {
+        // Check if user exists
+        const existing = await prisma.user.findUnique({ where: { email: data.email } });
+        if (existing) throw new Error("Email already registered");
+        return prisma.user.create({
+          data: {
+            name: data.name,
+            email: data.email,
+            password: data.password,
+            role: data.role || "EMPLOYEE",
+            profileImage: newUserObj.profileImage
+          }
+        });
+      },
+      (db) => {
+        const existing = db.users.find(u => u.email === data.email);
+        if (existing) throw new Error("Email already registered");
+        db.users.push(newUserObj);
+        return { result: newUserObj, updatedDb: db };
+      }
+    );
+    return { success: true, user: result };
+  } catch (error: any) {
+    console.error("❌ registerUser Server Error:", error);
+    return { success: false, error: error.message || "Failed to register account." };
+  }
 }
 
 export async function updateUserProfile(id: string, data: any) {

@@ -23,12 +23,17 @@ export default function RegisterPage() {
     setSuccess(false);
 
     try {
-      await registerUser({ name, email, password, role });
-      setSuccess(true);
-      setLoading(false);
-      setTimeout(() => {
-        router.push('/login');
-      }, 2000);
+      const res = await registerUser({ name, email, password, role });
+      if (res && res.success === false) {
+        setError(res.error || 'Failed to register account.');
+        setLoading(false);
+      } else {
+        setSuccess(true);
+        setLoading(false);
+        setTimeout(() => {
+          router.push('/login');
+        }, 2000);
+      }
     } catch (err: any) {
       setError(err?.message || 'Failed to register account.');
       setLoading(false);
