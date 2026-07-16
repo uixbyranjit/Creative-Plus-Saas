@@ -42,6 +42,9 @@ export interface LocalDb {
 }
 
 function initializeDbFile() {
+  if (process.env.NODE_ENV === 'production' || process.env.VERCEL === '1') {
+    return;
+  }
   const dir = path.dirname(DB_FILE_PATH);
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
@@ -74,20 +77,23 @@ function initializeDbFile() {
 }
 
 export function readDb(): LocalDb {
+  if (process.env.NODE_ENV === 'production' || process.env.VERCEL === '1') {
+    throw new Error("Production read from fallback JSON database is disabled.");
+  }
   initializeDbFile();
   const raw = fs.readFileSync(DB_FILE_PATH, 'utf-8');
   return JSON.parse(raw);
 }
 
 export function writeDb(data: LocalDb) {
+  if (process.env.NODE_ENV === 'production' || process.env.VERCEL === '1') {
+    throw new Error("Production write to fallback JSON database is disabled.");
+  }
   try {
     initializeDbFile();
     fs.writeFileSync(DB_FILE_PATH, JSON.stringify(data, null, 2), 'utf-8');
   } catch (err: any) {
     console.error("⚠️ Failed to write to local fallback database:", err.message);
-    if (err.code === 'EROFS') {
-      throw new Error("Local fallback database is read-only on Vercel. Please configure and migrate your production PostgreSQL database.");
-    }
     throw err;
   }
 }

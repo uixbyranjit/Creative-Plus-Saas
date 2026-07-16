@@ -8,6 +8,10 @@ import { sendEmail } from './email';
 // Test connection state
 let cachedDbConnected: boolean | null = null;
 async function checkDbConnection(): Promise<boolean> {
+  if (process.env.NODE_ENV === 'production' || process.env.VERCEL === '1') {
+    isDbFallbackActive.value = false;
+    return true;
+  }
   if (cachedDbConnected !== null) return cachedDbConnected;
   try {
     if (!process.env.DATABASE_URL) {
@@ -41,6 +45,9 @@ async function execute<T = any>(
       const res = await prismaQuery();
       return res ? JSON.parse(JSON.stringify(res)) : res;
     } catch (error: any) {
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL === '1') {
+        throw error;
+      }
       // Check if it's a connection/network error or similar DB issue
       const msg = error?.message || "";
       if (
@@ -60,6 +67,9 @@ async function execute<T = any>(
   }
 
   // Fallback DB execution
+  if (process.env.NODE_ENV === 'production' || process.env.VERCEL === '1') {
+    throw new Error("Local fallback database is disabled in production. Please connect PostgreSQL.");
+  }
   const db = fallback.readDb();
   const { result, updatedDb } = fallbackQuery(db);
   if (updatedDb) {
