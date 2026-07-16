@@ -38,7 +38,8 @@ async function execute<T = any>(
   const isConnected = await checkDbConnection();
   if (isConnected) {
     try {
-      return await prismaQuery();
+      const res = await prismaQuery();
+      return res ? JSON.parse(JSON.stringify(res)) : res;
     } catch (error: any) {
       // Check if it's a connection/network error or similar DB issue
       const msg = error?.message || "";
@@ -64,7 +65,7 @@ async function execute<T = any>(
   if (updatedDb) {
     fallback.writeDb(updatedDb);
   }
-  return result;
+  return result ? JSON.parse(JSON.stringify(result)) : result;
 }
 
 // ---------------------------------------------------------
