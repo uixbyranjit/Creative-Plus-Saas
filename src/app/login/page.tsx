@@ -27,45 +27,50 @@ export default function LoginPage() {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
+    console.log("1. Form submit event fired");
     e.preventDefault();
+    console.log("2. preventDefault() executed successfully");
     setLoading(true);
     setError('');
 
     try {
-      console.log("1. Login form submitted for email:", email);
-      console.log("2. signIn() called");
-      const res = await signIn('credentials', {
+      console.log("3. Preparing parameters for signIn()");
+      const signinParams = {
         redirect: false,
         email,
         password,
-      });
-      console.log("signIn() returned response status:", res?.status, "error:", res?.error);
+      };
+      console.log("4. Calling signIn('credentials', ...)", signinParams);
+      
+      const res = await signIn('credentials', signinParams);
+      console.log("5. signIn() resolved, response:", res);
 
       if (res?.error) {
+        console.log("6. signIn() returned validation error:", res.error);
         setError('Invalid email or password combination');
         setLoading(false);
       } else {
-        console.log("14. Cookie written successfully (session complete)");
-        console.log("15. Redirect started - Fetching session...");
+        console.log("7. Login success. Cookie written. Fetching active session...");
         
-        // Fetch session to determine role redirect
         const sessionRes = await fetch('/api/auth/session');
-        console.log("Session API Response received:", sessionRes.status);
+        console.log("8. Session fetch request resolved with status:", sessionRes.status);
+        
         const session = await sessionRes.json();
-        console.log("Session JSON parsed. User role:", session?.user?.role);
+        console.log("9. Session JSON parsed. User object:", session?.user);
         
         if (session?.user?.role === 'CLIENT') {
-          console.log("Routing to: /client-portal");
+          console.log("10. Routing to client portal: /client-portal");
           router.push('/client-portal');
         } else {
-          console.log("Routing to: /dashboard");
+          console.log("10. Routing to main dashboard: /dashboard");
           router.push('/dashboard');
         }
-        console.log("16. Redirect completed successfully");
+        console.log("11. Router push complete. Triggering refresh...");
         router.refresh();
+        console.log("12. Router refresh triggered");
       }
-    } catch (err) {
-      console.error("❌ Login exception caught client-side:", err);
+    } catch (err: any) {
+      console.error("❌ Exception caught inside handleSubmit try-catch:", err);
       setError('An unexpected error occurred. Please try again.');
       setLoading(false);
     }
