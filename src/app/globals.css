@@ -1,0 +1,128 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-purple: #6C4CF1;
+  --color-brand-purple-hover: #593cd3;
+  --color-brand-purple-light: #F0EDFE;
+  
+  --color-border-light: #E4E4E7;
+  --color-border-dark: #27272A;
+  
+  --shadow-premium: 0 4px 20px -2px rgba(108, 76, 241, 0.05), 0 2px 8px -1px rgba(0, 0, 0, 0.02);
+  --shadow-premium-hover: 0 12px 30px -4px rgba(108, 76, 241, 0.1), 0 4px 12px -2px rgba(0, 0, 0, 0.04);
+}
+
+:root {
+  --background: #FFFFFF;
+  --foreground: #09090B;
+  
+  --card-bg: #FFFFFF;
+  --card-border: #E4E4E7;
+  
+  --muted-text: #71717A;
+  --bg-hover: #F4F4F5;
+  --sidebar-width: 260px;
+}
+
+.dark {
+  --background: #09090B;
+  --foreground: #FAFAFA;
+  
+  --card-bg: #18181B;
+  --card-border: #27272A;
+  
+  --muted-text: #A1A1AA;
+  --bg-hover: #27272A;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  overflow-x: hidden;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #D4D4D8;
+  border-radius: 9999px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #3F3F46;
+}
+
+/* Smooth drag and drop */
+.kanban-column {
+  min-height: 500px;
+}
+
+/* Glassmorphism utility */
+.glass-effect {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.dark .glass-effect {
+  background: rgba(24, 24, 27, 0.7);
+}
+
+/* Custom premium badge animations */
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.33);
+  }
+  80%, 100% {
+    opacity: 0;
+  }
+}
+
+.pulse-dot {
+  position: relative;
+}
+
+.pulse-dot::before {
+  content: '';
+  position: absolute;
+  left: -4px;
+  top: -4px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background-color: #6C4CF1;
+  opacity: 0.4;
+  animation: pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+}
+
+/* Shimmer Loading Skeleton */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.shimmer-skeleton {
+  background: linear-gradient(90deg, #F4F4F5 25%, #E4E4E7 50%, #F4F4F5 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.dark .shimmer-skeleton {
+  background: linear-gradient(90deg, #27272A 25%, #18181B 50%, #27272A 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}

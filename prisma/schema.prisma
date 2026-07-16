@@ -1,0 +1,244 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  DESIGNER
+  EMPLOYEE
+  CLIENT
+}
+
+enum LeadStatus {
+  NEW_LEAD
+  CONTACTED
+  PROPOSAL
+  WON
+  LOST
+}
+
+enum OrderStatus {
+  NEW
+  WORKING
+  REVIEW
+  REVISION
+  APPROVAL
+  COMPLETED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum TaskStatus {
+  PENDING
+  WORKING
+  COMPLETED
+  CANCELLED
+  OVERDUE
+}
+
+enum PaymentStatus {
+  PAID
+  PARTIAL
+  PENDING
+  OVERDUE
+}
+
+enum PaymentMode {
+  CASH
+  UPI
+  CARD
+  BANK_TRANSFER
+  CHEQUE
+}
+
+model User {
+  id            String        @id @default(uuid())
+  name          String
+  email         String        @unique
+  password      String
+  role          Role          @default(EMPLOYEE)
+  profileImage  String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  assignedTasks Task[]        @relation("TaskAssignee")
+  assignedOrders Order[]      @relation("OrderDesigner")
+  activityLogs  ActivityLog[]
+}
+
+model Lead {
+  id          String      @id @default(uuid())
+  leadId      String      @unique // Auto-generated short ID (e.g., CPD-L-1001)
+  clientName  String
+  companyName String?
+  email       String
+  mobile      String
+  source      String      // Facebook, Instagram, Website, Reference, WhatsApp, Other
+  status      LeadStatus  @default(NEW_LEAD)
+  remarks     String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model Client {
+  id           String      @id @default(uuid())
+  clientId     String      @unique // Auto-generated (e.g., CPD-C-1001)
+  name         String
+  companyName  String?
+  mobile       String
+  email        String      @unique
+  city         String
+  pinCode      String
+  leadSource   String
+  notes        String?
+  gstNumber    String?
+  address      String?
+  industry     String?
+  status       String      // Active, Inactive, Blocked
+  profileImage String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  orders       Order[]
+  payments     Payment[]
+  followUps    FollowUp[]
+  subscriptions Subscription[]
+}
+
+model Subscription {
+  id             String      @id @default(uuid())
+  clientId       String
+  client         Client      @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  serviceName    String      // Monthly Retainer, SEO Package, etc.
+  amount         Float
+  intervalMonths Int         @default(1)
+  status         String      // ACTIVE, PAUSED, CANCELLED
+  lastBilled     DateTime    @default(now())
+  nextBilling    DateTime
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+}
+
+model Order {
+  id               String       @id @default(uuid())
+  orderId          String       @unique // Auto-generated (e.g., CPD-O-1001)
+  clientId         String
+  client           Client       @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  serviceName      String
+  workType         String       // Single Design, Monthly Package, Project, Other
+  description      String?
+  assignedToId     String?
+  assignedDesigner User?        @relation("OrderDesigner", fields: [assignedToId], references: [id])
+  priority         Priority     @default(MEDIUM)
+  startDate        DateTime
+  endDate          DateTime
+  expectedDelivery DateTime
+  status           OrderStatus  @default(NEW)
+  advanceAmount    Float        @default(0)
+  remainingAmount  Float
+  totalAmount      Float
+  files            File[]
+  notes            String?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  history          OrderStageHistory[]
+  payments         Payment[]
+}
+
+model OrderStageHistory {
+  id          String      @id @default(uuid())
+  orderId     String
+  order       Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  stage       OrderStatus
+  completedBy String
+  comments    String?
+  attachments String?     // Cloudinary/local JSON file links
+  timestamp   DateTime    @default(now())
+}
+
+model Task {
+  id           String      @id @default(uuid())
+  name         String
+  description  String?
+  assignedToId String?
+  assignedTo   User?       @relation("TaskAssignee", fields: [assignedToId], references: [id])
+  deadline     DateTime
+  priority     Priority    @default(MEDIUM)
+  status       TaskStatus  @default(PENDING)
+  workingHours Float       @default(0)
+  attachments  String?     // JSON array of file paths
+  comments     String?     // Text notes
+  checklist    String?     // JSON array of checklist items
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+}
+
+model Payment {
+  id            String        @id @default(uuid())
+  orderId       String?
+  order         Order?        @relation(fields: [orderId], references: [id])
+  clientId      String
+  client        Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  totalAmount   Float
+  advance       Float         @default(0)
+  balance       Float
+  paymentMode   PaymentMode   @default(UPI)
+  invoiceNumber String        @unique
+  gst           Float         @default(18) // GST percentage
+  dueDate       DateTime
+  status        PaymentStatus @default(PENDING)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+model FollowUp {
+  id           String      @id @default(uuid())
+  clientId     String
+  client       Client      @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  purpose      String
+  date         DateTime
+  time         String      // HH:MM format
+  reminder     Boolean     @default(true)
+  remarks      String?
+  status       String      // PENDING, COMPLETED, CANCELLED
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  title     String
+  message   String
+  type      String   // info, warning, success, error
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model File {
+  id        String   @id @default(uuid())
+  name      String
+  path      String   // Cloudinary secure URL or Local URL
+  type      String   // PDF, PSD, Image, ZIP, etc.
+  size      Int
+  orderId   String?
+  order     Order?   @relation(fields: [orderId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+model ActivityLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  action    String
+  details   String?
+  createdAt DateTime @default(now())
+}
