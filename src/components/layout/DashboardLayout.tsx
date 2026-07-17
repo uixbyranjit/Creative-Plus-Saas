@@ -43,9 +43,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [aiOpen, setAiOpen] = useState(false);
 
   useEffect(() => {
+    // Read document cookies
+    const cookieNames = typeof document !== 'undefined' ? document.cookie.split(';').map(c => c.split('=')[0].trim()).filter(Boolean) : [];
+
+    console.warn("DASHBOARD LAYOUT CLIENT EFFECT AUDIT:", {
+      file: "src/components/layout/DashboardLayout.tsx",
+      function: "useEffect redirect hook",
+      pathname,
+      status,
+      sessionUser: session ? { name: session.user?.name, email: session.user?.email, role: (session.user as any)?.role } : null,
+      cookieNames
+    });
+
     if (status === 'unauthenticated') {
+      console.error("DASHBOARD LAYOUT REDIRECT TRIGGERED: Redirecting unauthenticated user to /login from line 58");
       router.push('/login');
     } else if ((session?.user as any)?.role === 'CLIENT' && !pathname.startsWith('/client-portal')) {
+      console.warn("DASHBOARD LAYOUT REDIRECT TRIGGERED: Redirecting CLIENT role to /client-portal from line 61");
       router.push('/client-portal');
     }
   }, [status, session, router, pathname]);
