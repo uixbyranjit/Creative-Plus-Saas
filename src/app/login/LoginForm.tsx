@@ -25,60 +25,38 @@ export default function LoginForm() {
     setError('');
 
     try {
-      console.warn("STEP 3: Fetching CSRF token...");
-      const csrfRes = await fetch('/api/auth/csrf');
-      const { csrfToken } = await csrfRes.json();
-      console.warn("STEP 4: CSRF token retrieved:", csrfToken);
-
-      console.warn("STEP 5: Sending credentials callback POST request...");
-      const response = await fetch('/api/auth/callback/credentials', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
-        },
-        body: new URLSearchParams({
-          email: emailVal,
-          password: passwordVal,
-          csrfToken,
-          redirect: 'false',
-          json: 'true',
-          callbackUrl: window.location.origin + '/dashboard'
-        })
+      console.warn("STEP 1: Calling signIn('credentials', ...)");
+      const result = await signIn("credentials", {
+        email: emailVal,
+        password: passwordVal,
+        redirect: false,
+        callbackUrl: "/dashboard",
       });
+      console.warn("STEP 2: signIn result received:", result);
 
-      console.warn("STEP 6: Callback response received status:", response.status);
-      const data = await response.json();
-      console.warn("STEP 7: Callback response data parsed:", data);
-
-      const hasError = data?.error || (data?.url && (data.url.includes("error=") || data.url.includes("csrf=")));
-
-      if (hasError) {
-        console.warn("STEP 8: Authentication failed. Error info:", data?.error || "CSRF/Redirect Error");
+      if (result?.error) {
+        console.warn("STEP 3: signIn returned error:", result.error);
         setError('Invalid email or password combination');
         setLoading(false);
-      } else {
-        console.warn("STEP 8: Authentication successful. Fetching session...");
+      } else if (result?.ok) {
+        console.warn("STEP 4: signIn successful. Fetching session...");
         const sessionRes = await fetch('/api/auth/session');
         const session = await sessionRes.json();
-        console.warn("STEP 9: Session response parsed. User:", session?.user);
+        console.warn("STEP 5: Session parsed. Role:", session?.user?.role);
 
-        if (!session || !session.user) {
-          console.warn("⚠️ STEP 9b: Authentication completed but session is empty. Cookie was not written or is invalid.");
-          setError('Failed to establish a valid session. Please verify your credentials or check cookie support.');
-          setLoading(false);
-          return;
-        }
-
-        if (session.user.role === 'CLIENT') {
-          console.warn("STEP 10: Redirecting client to /client-portal");
-          window.location.href = '/client-portal';
+        if (session?.user?.role === 'CLIENT') {
+          console.warn("STEP 6: Redirecting client to /client-portal");
+          router.push('/client-portal');
         } else {
-          console.warn("STEP 10: Redirecting team to /dashboard");
-          window.location.href = '/dashboard';
+          console.warn("STEP 6: Redirecting team to /dashboard");
+          router.push('/dashboard');
         }
+        router.refresh();
+      } else {
+        setLoading(false);
       }
     } catch (err: any) {
-      console.error("❌ Exception caught inside performLogin try-catch:", err);
+      console.error("❌ Exception caught inside performLogin:", err);
       setError('An unexpected error occurred. Please try again.');
       setLoading(false);
     }
