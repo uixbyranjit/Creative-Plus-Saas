@@ -50,17 +50,26 @@ export default function LoginPage() {
       const data = await response.json();
       console.log("7. Callback response data parsed:", data);
 
-      if (data?.error) {
-        console.log("8. Authentication failed with error:", data.error);
+      const hasError = data?.error || (data?.url && (data.url.includes("error=") || data.url.includes("csrf=")));
+
+      if (hasError) {
+        console.log("8. Authentication failed. Error info:", data?.error || "CSRF/Redirect Error");
         setError('Invalid email or password combination');
         setLoading(false);
       } else {
         console.log("8. Authentication successful. Fetching session...");
         const sessionRes = await fetch('/api/auth/session');
         const session = await sessionRes.json();
-        console.log("9. Session response parsed. Role:", session?.user?.role);
+        console.log("9. Session response parsed. User:", session?.user);
 
-        if (session?.user?.role === 'CLIENT') {
+        if (!session || !session.user) {
+          console.warn("⚠️ Authentication completed but session is empty. Cookie was not written or is invalid.");
+          setError('Failed to establish a valid session. Please verify your credentials or check cookie support.');
+          setLoading(false);
+          return;
+        }
+
+        if (session.user.role === 'CLIENT') {
           console.log("10. Redirecting client to /client-portal");
           window.location.href = '/client-portal';
         } else {
