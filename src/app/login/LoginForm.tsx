@@ -46,12 +46,11 @@ export default function LoginForm() {
 
         if (session?.user?.role === 'CLIENT') {
           console.warn("STEP 6: Redirecting client to /client-portal");
-          router.push('/client-portal');
+          window.location.href = '/client-portal';
         } else {
           console.warn("STEP 6: Redirecting team to /dashboard");
-          router.push('/dashboard');
+          window.location.href = '/dashboard';
         }
-        router.refresh();
       } else {
         setLoading(false);
       }
