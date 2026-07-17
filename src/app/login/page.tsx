@@ -20,60 +20,73 @@ export default function LoginPage() {
     { label: "Client", email: "client@creativeplus.com", pass: "password123", color: "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300" },
   ];
 
-  const handleQuickLogin = (demoEmail: string, demoPass: string) => {
+  const performLogin = async (emailVal: string, passwordVal: string) => {
+    setLoading(true);
+    setError('');
+
+    try {
+      console.log("3. Fetching CSRF token...");
+      const csrfRes = await fetch('/api/auth/csrf');
+      const { csrfToken } = await csrfRes.json();
+      console.log("4. CSRF token retrieved:", csrfToken);
+
+      console.log("5. Sending credentials callback POST request...");
+      const response = await fetch('/api/auth/callback/credentials', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: new URLSearchParams({
+          email: emailVal,
+          password: passwordVal,
+          csrfToken,
+          redirect: 'false',
+          json: 'true',
+          callbackUrl: window.location.origin + '/dashboard'
+        })
+      });
+
+      console.log("6. Callback response received status:", response.status);
+      const data = await response.json();
+      console.log("7. Callback response data parsed:", data);
+
+      if (data?.error) {
+        console.log("8. Authentication failed with error:", data.error);
+        setError('Invalid email or password combination');
+        setLoading(false);
+      } else {
+        console.log("8. Authentication successful. Fetching session...");
+        const sessionRes = await fetch('/api/auth/session');
+        const session = await sessionRes.json();
+        console.log("9. Session response parsed. Role:", session?.user?.role);
+
+        if (session?.user?.role === 'CLIENT') {
+          console.log("10. Redirecting client to /client-portal");
+          window.location.href = '/client-portal';
+        } else {
+          console.log("10. Redirecting team to /dashboard");
+          window.location.href = '/dashboard';
+        }
+      }
+    } catch (err: any) {
+      console.error("❌ Exception caught inside performLogin try-catch:", err);
+      setError('An unexpected error occurred. Please try again.');
+      setLoading(false);
+    }
+  };
+
+  const handleQuickLogin = async (demoEmail: string, demoPass: string) => {
+    console.log("Quick Login clicked for:", demoEmail);
     setEmail(demoEmail);
     setPassword(demoPass);
-    setError('');
+    await performLogin(demoEmail, demoPass);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     console.log("1. Form submit event fired");
     e.preventDefault();
     console.log("2. preventDefault() executed successfully");
-    setLoading(true);
-    setError('');
-
-    try {
-      console.log("3. Preparing parameters for signIn()");
-      const signinParams = {
-        redirect: false,
-        email,
-        password,
-      };
-      console.log("4. Calling signIn('credentials', ...)", signinParams);
-      
-      const res = await signIn('credentials', signinParams);
-      console.log("5. signIn() resolved, response:", res);
-
-      if (res?.error) {
-        console.log("6. signIn() returned validation error:", res.error);
-        setError('Invalid email or password combination');
-        setLoading(false);
-      } else {
-        console.log("7. Login success. Cookie written. Fetching active session...");
-        
-        const sessionRes = await fetch('/api/auth/session');
-        console.log("8. Session fetch request resolved with status:", sessionRes.status);
-        
-        const session = await sessionRes.json();
-        console.log("9. Session JSON parsed. User object:", session?.user);
-        
-        if (session?.user?.role === 'CLIENT') {
-          console.log("10. Routing to client portal: /client-portal");
-          router.push('/client-portal');
-        } else {
-          console.log("10. Routing to main dashboard: /dashboard");
-          router.push('/dashboard');
-        }
-        console.log("11. Router push complete. Triggering refresh...");
-        router.refresh();
-        console.log("12. Router refresh triggered");
-      }
-    } catch (err: any) {
-      console.error("❌ Exception caught inside handleSubmit try-catch:", err);
-      setError('An unexpected error occurred. Please try again.');
-      setLoading(false);
-    }
+    await performLogin(email, password);
   };
 
   return (
